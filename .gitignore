@@ -1,5 +1,23 @@
-# Environment
-venv
+# Compiled files
+__pycache__/
+*.pyc
 
-# Data
-data
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Editor
+.vscode
+
+# Environments
+venv/
+
+# Package Data
+data/**/wise
+
+# Testing
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
