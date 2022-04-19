@@ -86,16 +86,19 @@ class Ledger:
         self.transactions.append(transaction)
 
     def report(self, end=None):
+        # first deal with simple case of single fx pair
         logger.debug("Generating report.")
-        for transaction in self.transactions:
-            if transaction.is_taxable:
+        for t in self.transactions:
+            if t.is_taxable:
                 basis = self.queue.get_nowait()
                 self.balance += basis.usd
-                transaction.gain = (
-                    transaction.eur * basis.rate - transaction.eur * transaction.rate
+                rate_diff = basis.rate - t.rate
+                logger.debug(f"Rate diff is {basis.rate} - {t.rate} = {rate_diff}")
+                t.gain = (
+                    t.eur * basis.rate - t.eur * t.rate
                 )
-                self.balance -= transaction.usd
-                self.gains += transaction.gain
+                self.balance -= t.usd
+                self.gains += t.gain
 
     def show(self):
         headers = (
@@ -128,3 +131,7 @@ class Ledger:
             for t in self.transactions
         ]
         print(tabulate(rows, headers=headers))
+
+    def __repr__(self):
+        # TODO show filters
+        return f"Ledger({len(self.transactions)} transactions)"
