@@ -2,19 +2,22 @@
 __pycache__/
 *.pyc
 
-# Packaging
-build/
-dist/
-*.egg-info/
-
 # Editor
 .vscode
 
 # Environments
 venv/
 
+# Logging
+log/*.log
+
 # Package Data
-data/**/wise
+data/real
+
+# Packaging
+build/
+dist/
+*.egg-info/
 
 # Testing
 .pytest_cache/

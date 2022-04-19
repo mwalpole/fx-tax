@@ -1,0 +1,27 @@
+version: 1
+disable_existing_loggers: yes
+formatters:
+  standard:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: standard
+    level: INFO
+  logfile:
+    class: logging.FileHandler
+    filename: log/audit.log
+    formatter: standard
+    level: DEBUG
+root:
+  level: DEBUG
+  handlers: [console,logfile]
+loggers:
+  audit:
+    level: DEBUG
+    handlers: [console, logfile]
+    propagate: no
+  audit.transaction:
+    level: DEBUG
+    handlers: [console, logfile]
+    propagate: no

@@ -1,10 +1,13 @@
 from dataclasses import dataclass, field
 from datetime import datetime
+import logging
 from queue import Queue as FifoQueue, LifoQueue, PriorityQueue, SimpleQueue
 from tabulate import tabulate
 from typing import Any, List
 
 from pydantic import validate_arguments
+
+logger = logging.getLogger("audit.transaction")
 
 ACCOUNTING_RULES = {
     "FIFO": FifoQueue,
@@ -27,7 +30,7 @@ class Transaction:
     ccy2: str
     rate: float
     fee: float
-    gain: float = 0.
+    gain: float = 0.0
 
     @property
     def amt2(self):
@@ -51,7 +54,7 @@ class Transaction:
     def eur(self):
         return self.amt1 if self.ccy1 == "EUR" else self.amt2
 
-    @property    
+    @property
     def usd(self):
         return self.amt1 if self.ccy1 == "USD" else self.amt2
 
@@ -63,10 +66,10 @@ class Ledger:
     # 1. accounting rules
     # 2. filter parameters, e.g. up to Q1 2021
     accounting_rule: str
-    balance: float = 0.
-    gains: float = 0.
+    balance: float = 0.0
+    gains: float = 0.0
     transactions: List[Transaction] = field(default_factory=list)
-    queue: SimpleQueue = SimpleQueue()
+    queue: SimpleQueue = SimpleQueue()  # simple fifo queue
 
     # @property
     # def queue(self):
@@ -83,11 +86,14 @@ class Ledger:
         self.transactions.append(transaction)
 
     def report(self, end=None):
+        logger.debug("Generating report.")
         for transaction in self.transactions:
             if transaction.is_taxable:
                 basis = self.queue.get_nowait()
                 self.balance += basis.usd
-                transaction.gain = transaction.eur * basis.rate - transaction.eur * transaction.rate
+                transaction.gain = (
+                    transaction.eur * basis.rate - transaction.eur * transaction.rate
+                )
                 self.balance -= transaction.usd
                 self.gains += transaction.gain
 
@@ -105,17 +111,20 @@ class Ledger:
             "is_basis",
             "gain",
         )
-        rows = [[
-            t.id,
-            t.date,
-            t.ccy1,
-            t.amt1,
-            t.ccy2,
-            t.amt2,
-            t.rate,
-            t.fee,
-            t.is_taxable,
-            t.is_basis,
-            t.gain,
-        ] for t in self.transactions]
+        rows = [
+            [
+                t.id,
+                t.date,
+                t.ccy1,
+                t.amt1,
+                t.ccy2,
+                t.amt2,
+                t.rate,
+                t.fee,
+                t.is_taxable,
+                t.is_basis,
+                t.gain,
+            ]
+            for t in self.transactions
+        ]
         print(tabulate(rows, headers=headers))
