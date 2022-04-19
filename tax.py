@@ -33,17 +33,12 @@ def assemble_ledger(filepath=None):
     return ledger
 
 
-def show_ledger(filepath=None):
+def get_report(filepath=None, show=True):
     ledger = assemble_ledger(filepath)
     ledger.report()
-    return ledger.show()
-
-
-def calculate_gain(filepath=None):
-    ledger = assemble_ledger(filepath)
-    ledger.report()
-    ledger.show()
-    return ledger.gains
+    if show:
+        ledger.show()
+    return ledger
 
 
 def get_filepath(args=None):
@@ -72,7 +67,7 @@ def main():
     try:
         logger.debug("Begin.")
         filepath = get_filepath()
-        sys.exit(show_ledger(filepath))
+        sys.exit(get_report(filepath))
     finally:
         logger.debug("Done.")
 
