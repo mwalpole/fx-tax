@@ -20,28 +20,28 @@ def get_row_data(filepath=None):
     return rows
 
 
-def assemble_ledger(filepath=None):
+def assemble_ledger(filepath=None, accounting_rule=None):
     # EUR purchase txs are recorded on ledger
     # Ledger txs are ranked based on rule and balance
     # EUR sales deplete the balance of a prior purchase tx
     # Ledger also records USD proceeds by date
     # Proceeds are aggregated over a window
     row_data = get_row_data(filepath)
-    ledger = Ledger(accounting_rule="FIFO")
+    ledger = Ledger(accounting_rule=accounting_rule)
     transactions = [Transaction(*item) for item in row_data]
     ledger.add_transactions(transactions)
     return ledger
 
 
-def get_report(filepath=None, show=True):
-    ledger = assemble_ledger(filepath)
+def get_report(filepath=None, accounting_rule=None, show=True):
+    ledger = assemble_ledger(filepath, accounting_rule)
     ledger.report()
     if show:
         ledger.show()
     return ledger
 
 
-def get_filepath(args=None):
+def parse_args(args=None):
     args = args if args is not None else sys.argv[1:]
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -52,8 +52,17 @@ def get_filepath(args=None):
         help="csv file with transaction detail",
         default="data/sample.csv",
     )
+    parser.add_argument(
+        "-r",
+        "--rule",
+        dest="accounting_rule",
+        type=str,
+        choices=["FIFO", "LIFO", "HIFO"],
+        help="accounting rule is FIFO, LIFO, HIFO",
+        default="FIFO",
+    )
     args = parser.parse_args(args)
-    return args.filepath
+    return args
 
 
 def set_up_logging():
@@ -65,9 +74,9 @@ def set_up_logging():
 def main():
     set_up_logging()
     try:
-        logger.debug("Begin.")
-        filepath = get_filepath()
-        sys.exit(get_report(filepath))
+        args = parse_args()
+        logger.debug(f"Begin {args.accounting_rule} report.")
+        sys.exit(get_report(args.filepath, args.accounting_rule))
     finally:
         logger.debug("Done.")
 

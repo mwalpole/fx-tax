@@ -1,22 +1,24 @@
 from dataclasses import dataclass, field
 from datetime import datetime
+from functools import cache, partial
 import logging
-from queue import Queue as FifoQueue, LifoQueue, PriorityQueue, SimpleQueue
+from queue import SimpleQueue
 from tabulate import tabulate
-from typing import Any, List
+from typing import List
 
 from pydantic import validate_arguments
 
 logger = logging.getLogger("audit.transaction")
 
 ACCOUNTING_RULES = {
-    "FIFO": FifoQueue,
-    "LIFI": LifoQueue,
-    "HIFO": PriorityQueue,
+    "FIFO": partial(sorted, key=lambda x: x.date),
+    "LIFO": partial(sorted, key=lambda x: x.date, reverse=True),
+    "HIFO": partial(sorted, key=lambda x: x.rate, reverse=True),
 }
 
 
-def get_queue_from_rule(accounting_rule="FIFO"):
+@cache
+def get_sorting_func_from_rule(accounting_rule="FIFO"):
     return ACCOUNTING_RULES[accounting_rule]
 
 
@@ -71,13 +73,9 @@ class Ledger:
     transactions: List[Transaction] = field(default_factory=list)
     queue: SimpleQueue = SimpleQueue()  # simple fifo queue
 
-    # @property
-    # def queue(self):
-    #     queue = get_queue_from_rule(self.accounting_rule)
-    #     return queue()
-
     def add_transactions(self, transactions):
-        for transaction in transactions:
+        sort_func = get_sorting_func_from_rule(self.accounting_rule)
+        for transaction in sort_func(transactions):
             self._add_transaction(transaction)
 
     def _add_transaction(self, transaction):
@@ -87,10 +85,10 @@ class Ledger:
 
     def report(self, end=None):
         # first deal with simple case of single fx pair
-        logger.debug("Generating report.")
-        for t in self.transactions:
+        for t in sorted(self.transactions, key=lambda x: x.date):
             if t.is_taxable:
                 basis = self.queue.get_nowait()
+                logger.debug(f"Taxable event {t.date}, basis is {basis.date}")
                 self.balance += basis.usd
                 rate_diff = basis.rate - t.rate
                 logger.debug(f"Rate diff is {basis.rate} - {t.rate} = {rate_diff}")
