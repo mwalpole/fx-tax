@@ -34,7 +34,7 @@ class Transaction:
     fee: float
     basis: float = None
     diff: float = None
-    gain: float = None
+    gain: float = 0.0
 
     @property
     def amt2(self):
@@ -71,7 +71,7 @@ class Ledger:
     # 2. filter parameters, e.g. up to Q1 2021
     accounting_rule: str
     balance: float = 0.0
-    gains: float = 0.0
+    gains: List[float] = field(default_factory=list)
     transactions: List[Transaction] = field(default_factory=list)
     queue: SimpleQueue = SimpleQueue()  # simple fifo queue
 
@@ -85,6 +85,9 @@ class Ledger:
             self.queue.put(transaction)
         self.transactions.append(transaction)
 
+    def taxable_gains(self):
+        return sum(g for g in self.gains if abs(g) > 200)
+
     def report(self, end=None):
         # first deal with simple case of single fx pair
         for t in sorted(self.transactions, key=lambda x: x.date):
@@ -94,12 +97,10 @@ class Ledger:
                 self.balance += basis.usd
                 t.diff = basis.rate - t.rate
                 logger.debug(f"Rate diff is {basis.rate} - {t.rate} = {t.diff}")
-                t.gain = (
-                    t.eur * basis.rate - t.eur * t.rate
-                )
+                t.gain = t.eur * basis.rate - t.eur * t.rate
                 t.basis = basis.rate
                 self.balance -= t.usd
-                self.gains += t.gain
+                self.gains.append(t.gain)
 
     def show(self):
         headers = (
@@ -114,7 +115,7 @@ class Ledger:
             "is_taxable",
             "is_basis",
             "basis",
-            'diff',
+            "diff",
             "gain",
         )
         rows = [
@@ -138,5 +139,4 @@ class Ledger:
         print(tabulate(rows, headers=headers))
 
     def __repr__(self):
-        # TODO show filters
-        return f"Ledger({len(self.transactions)} transactions)"
+        return f"Ledger({len(self.transactions)} transactions, ${self.taxable_gains():,} taxable gains)"
