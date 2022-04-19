@@ -32,6 +32,7 @@ class Transaction:
     ccy2: str
     rate: float
     fee: float
+    basis: float = None
     gain: float = 0.0
 
     @property
@@ -95,6 +96,7 @@ class Ledger:
                 t.gain = (
                     t.eur * basis.rate - t.eur * t.rate
                 )
+                t.basis = basis.rate
                 self.balance -= t.usd
                 self.gains += t.gain
 
@@ -110,6 +112,7 @@ class Ledger:
             "fee",
             "is_taxable",
             "is_basis",
+            "basis",
             "gain",
         )
         rows = [
@@ -124,9 +127,10 @@ class Ledger:
                 t.fee,
                 t.is_taxable,
                 t.is_basis,
+                t.basis,
                 t.gain,
             ]
-            for t in self.transactions
+            for t in sorted(self.transactions, key=lambda x: x.date)
         ]
         print(tabulate(rows, headers=headers))
 
