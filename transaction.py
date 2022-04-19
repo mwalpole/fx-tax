@@ -33,7 +33,8 @@ class Transaction:
     rate: float
     fee: float
     basis: float = None
-    gain: float = 0.0
+    diff: float = None
+    gain: float = None
 
     @property
     def amt2(self):
@@ -91,8 +92,8 @@ class Ledger:
                 basis = self.queue.get_nowait()
                 logger.debug(f"Taxable event {t.date}, basis is {basis.date}")
                 self.balance += basis.usd
-                rate_diff = basis.rate - t.rate
-                logger.debug(f"Rate diff is {basis.rate} - {t.rate} = {rate_diff}")
+                t.diff = basis.rate - t.rate
+                logger.debug(f"Rate diff is {basis.rate} - {t.rate} = {t.diff}")
                 t.gain = (
                     t.eur * basis.rate - t.eur * t.rate
                 )
@@ -113,6 +114,7 @@ class Ledger:
             "is_taxable",
             "is_basis",
             "basis",
+            'diff',
             "gain",
         )
         rows = [
@@ -128,6 +130,7 @@ class Ledger:
                 t.is_taxable,
                 t.is_basis,
                 t.basis,
+                t.diff,
                 t.gain,
             ]
             for t in sorted(self.transactions, key=lambda x: x.date)
