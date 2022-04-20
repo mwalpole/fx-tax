@@ -33,7 +33,7 @@ def assemble_ledger(filepath=None, accounting_rule=None):
     return ledger
 
 
-def get_report(filepath=None, accounting_rule=None, show=True):
+def get_ledger(filepath=None, accounting_rule=None, show=True):
     ledger = assemble_ledger(filepath, accounting_rule)
     ledger.report()
     if show:
@@ -76,7 +76,7 @@ def main():
     try:
         args = parse_args()
         logger.debug(f"Begin {args.accounting_rule} report.")
-        sys.exit(get_report(args.filepath, args.accounting_rule))
+        sys.exit(get_ledger(args.filepath, args.accounting_rule))
     finally:
         logger.debug("Done.")
 

@@ -108,9 +108,8 @@ class Ledger:
         basis = self.basis_queue.get_nowait()
         for t in self.ordered_transactions(by="date"):
             if t.is_taxable:
-                lot_gain = 0
-                while t.eur_balance > 0 and self.basis_queue.qsize() > 0:
-                    if basis is None:
+                while t.eur_balance > 0:
+                    if basis is None and self.basis_queue.qsize() == 0:
                         logger.debug("No physical exchange to provide cost basis.")
                         break
                     else:
@@ -120,9 +119,9 @@ class Ledger:
                     covered_balance = min(map(abs, (t.eur_balance, basis.eur_balance)))
                     t.eur_drawdown += covered_balance
                     basis.eur_drawdown += covered_balance
-                    t.diff = round(basis.rate - t.rate, 4)
+                    t.diff = round(t.rate - basis.rate, 4)
                     t.basis = basis.rate
-                    t.gain += covered_balance * (basis.rate - t.rate)
+                    t.gain += covered_balance * (t.rate - basis.rate)
                     
                     logger.debug(f"IN   > {basis.date}: {basis.ccy2} {basis.eur:,.2f} @ {basis.rate}")
                     logger.debug(f"OUT  < {t.date}: {t.ccy1} {covered_balance:,.2f} @ {t.rate}")
@@ -138,8 +137,6 @@ class Ledger:
                     self.gains.append(t.gain)
                     logger.debug(f"Overall: ${t.gain:,.2f}")
                     logger.debug("-" * 50)
-
-                
 
     def show(self):
         headers = (
@@ -178,4 +175,4 @@ class Ledger:
         print(tabulate(rows, headers=headers))
 
     def __repr__(self):
-        return f"Ledger({len(self.transactions)} transactions, ${self.taxable_gains():,} taxable gains)"
+        return f"Ledger({len(self.transactions)} transactions, ${self.taxable_gains():,.2f} taxable gains)"
