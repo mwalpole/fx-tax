@@ -65,14 +65,14 @@ def parse_args(args=None):
     return args
 
 
-def set_up_logging():
+def do_logging_setup():
     with open("log/conf.yaml") as f:
         config = yaml.safe_load(f)
     logging.config.dictConfig(config)
 
 
 def main():
-    set_up_logging()
+    do_logging_setup()
     try:
         args = parse_args()
         logger.debug(f"Begin {args.accounting_rule} report.")

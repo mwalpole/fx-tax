@@ -11,6 +11,7 @@ handlers:
   logfile:
     class: logging.FileHandler
     filename: log/audit.log
+    mode: w
     formatter: standard
     level: DEBUG
 root:
